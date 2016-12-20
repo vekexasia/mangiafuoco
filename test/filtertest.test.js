@@ -63,5 +63,7 @@ describe('FilterTest', () => {
             ]);
         }));
     });
+    describe('unregister', () => {
+    });
 });
 //# sourceMappingURL=filtertest.test.js.map

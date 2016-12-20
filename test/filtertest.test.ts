@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { InMemoryFilterModel } from '../src/filtermodel/inmemoryfiltermodel.class';
 import { Handler } from '../src/handler/base.class';
 import { spy } from 'sinon';
+
 describe('FilterTest', () => {
   describe('addHandler', () => {
     it('should call model addHandler method', async () => {
@@ -39,7 +40,6 @@ describe('FilterTest', () => {
       await filter.addHandler({priority: 10, handler: Handler.fromCback('handler1', (o:number, cback) => cback(null, o+1))});
       expect(await filter.process(2)).is.eq(1.5);
     });
-
   });
 
   describe('processParallel', () => {
@@ -60,6 +60,10 @@ describe('FilterTest', () => {
         2/2
       ]);
     });
+  });
+
+  describe('unregister', () => {
+
   })
 
 });

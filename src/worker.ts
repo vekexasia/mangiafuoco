@@ -19,14 +19,12 @@ export class Filter<T> {
       let h: Handler<T,R> = queryHandlers[i];
       toRet = await h.handle(toRet);
     }
-
     return toRet as R;
   }
 
   async processParallel<R extends T>(obj:T): Promise<R[]> {
     const queryHandlers = await this.model.queryHandlers(this);
-    return Promise.all<R>(queryHandlers.map(h => h.handle(obj)))
+    return Promise.all<R>(queryHandlers.map(h => h.handle(obj)));
   }
-
 
 }

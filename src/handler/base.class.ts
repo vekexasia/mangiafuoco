@@ -1,6 +1,5 @@
 declare function handleDefinition<T,R extends T>(obj: T): Promise<R>;
 export class Handler<T,R extends T> {
-  public unregister:() => Promise<boolean> = () => Promise.resolve(true);
 
   constructor(public key: string, public handle: typeof handleDefinition) {
   }
