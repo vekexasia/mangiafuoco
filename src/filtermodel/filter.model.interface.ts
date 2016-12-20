@@ -1,4 +1,4 @@
-import { Filter } from '../worker';
+import { BaseHookSystem } from '../hooksystems/BaseHookSystem.class';
 import { Handler } from '../handler/base.class';
 
 export interface HandlerRegistration {
@@ -6,9 +6,9 @@ export interface HandlerRegistration {
   unregister(): Promise<boolean>
 }
 export interface FilterModel {
-  queryHandlers<T>(filter: Filter<T>): Promise<(Handler<T,any>)[]>;
+  queryHandlers<T>(filter: BaseHookSystem<T>): Promise<(Handler<T,any>)[]>;
 
-  registerHandler<T>(obj: {filter: Filter<T>, handler:  Handler<T,any>, priority?: number}): Promise<HandlerRegistration>;
+  registerHandler<T>(obj: {filter: BaseHookSystem<T>, handler:  Handler<T,any>, priority?: number}): Promise<HandlerRegistration>;
 
 
 }

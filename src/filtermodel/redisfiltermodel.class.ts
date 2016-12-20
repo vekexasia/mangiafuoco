@@ -1,5 +1,5 @@
 import { FilterModel, HandlerRegistration } from './filter.model.interface';
-import { Filter } from '../worker';
+import { BaseHookSystem } from '../hooksystems/BaseHookSystem.class';
 import { Handler } from '../handler/base.class';
 import { RedisClient } from 'redis';
 import { v4 as uuid } from 'uuid';
@@ -26,7 +26,7 @@ export class RedisFilterModel implements FilterModel {
     return toRet;
   }
 
-  async queryHandlers<T>(filter: Filter<T>): Promise<Handler<T, any>[]> {
+  async queryHandlers<T>(filter: BaseHookSystem<T>): Promise<Handler<T, any>[]> {
     const handlerKeys = await this.zrange(`handlers:${filter.baseKey}`, 0, -1);
     return handlerKeys
       .map((handlerKey, idx) => {
@@ -57,7 +57,7 @@ export class RedisFilterModel implements FilterModel {
       });
   }
 
-  async registerHandler<T>(obj: {filter: Filter<T>; handler: Handler<T, any>; priority?: number}): Promise<HandlerRegistration> {
+  async registerHandler<T>(obj: {filter: BaseHookSystem<T>; handler: Handler<T, any>; priority?: number}): Promise<HandlerRegistration> {
     let [, theID] = await Promise.all(
       [
         this.zadd(`handlers:${obj.filter.baseKey}`, obj.priority || 10, obj.handler.key),
@@ -65,14 +65,11 @@ export class RedisFilterModel implements FilterModel {
       ]
     );
 
-    // add myself to set of handlers.
 
 
     const oldHandler     = obj.handler.handle;
     const redisClient    = this.redisClientCreator();
     const blpop          = promisify(redisClient.blpop, redisClient);
-    const ping           = promisify(this.redisClient.ping, this.redisClient);
-    const get            = promisify(this.redisClient.get, this.redisClient);
     const rpush          = promisify(this.redisClient.rpush, this.redisClient);
     const zrem           = promisify(this.redisClient.zrem, this.redisClient);
     const unsubscribeKey = `handlers:unsubscribe:${obj.filter.baseKey}:${obj.handler.key}:${theID}`;

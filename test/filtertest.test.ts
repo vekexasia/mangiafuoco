@@ -1,4 +1,4 @@
-import { Filter } from '../src/worker';
+import { BaseHookSystem } from '../src/hooksystems/BaseHookSystem.class';
 import { expect } from 'chai';
 import { InMemoryFilterModel } from '../src/filtermodel/inmemoryfiltermodel.class';
 import { Handler } from '../src/handler/base.class';
@@ -8,7 +8,7 @@ describe('FilterTest', () => {
   describe('addHandler', () => {
     it('should call model addHandler method', async () => {
       let inMemoryFilterModel = new InMemoryFilterModel();
-      let filter = new Filter<number>("adder", inMemoryFilterModel);
+      let filter = new BaseHookSystem<number>("adder", inMemoryFilterModel);
       const theSpy = spy(inMemoryFilterModel, 'registerHandler');
       let handler = Handler.fromCback('haha', () => {
       });
@@ -22,7 +22,7 @@ describe('FilterTest', () => {
   describe('process', () => {
     let filter;
     beforeEach(() => {
-      filter = new Filter<number>("adder", new InMemoryFilterModel());
+      filter = new BaseHookSystem<number>("adder", new InMemoryFilterModel());
     });
 
     it ('shouldnt do anything and return original value if no handlers', async () => {
@@ -45,7 +45,7 @@ describe('FilterTest', () => {
   describe('processParallel', () => {
     let filter;
     beforeEach(() => {
-      filter = new Filter<number>("adder", new InMemoryFilterModel());
+      filter = new BaseHookSystem<number>("adder", new InMemoryFilterModel());
     });
 
     it ('shouldnt do anything and return empty array if no handlers', async () => {

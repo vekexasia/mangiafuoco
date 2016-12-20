@@ -1,15 +1,15 @@
-import { FilterModel } from './filtermodel/filter.model.interface';
-import { Handler } from './handler/base.class';
-export class Filter<T> {
+import { FilterModel, HandlerRegistration } from '../filtermodel/filter.model.interface';
+import { Handler } from '../handler/base.class';
+export class BaseHookSystem<T> {
   constructor(public baseKey: string, private model: FilterModel) {
   }
 
-  addHandler(obj: {handler: Handler<T,any>, priority?: number}): Promise<any> {
+  addHandler(obj: {handler: Handler<T,any>, priority?: number}): Promise<HandlerRegistration> {
     return this.model.registerHandler({
       filter: this,
       handler: obj.handler,
       priority: obj.priority,
-    })
+    });
   }
 
   async process<R extends T>(obj: T): Promise<R> {

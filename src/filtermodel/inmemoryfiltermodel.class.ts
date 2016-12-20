@@ -1,5 +1,5 @@
 import { FilterModel, HandlerRegistration } from './filter.model.interface';
-import { Filter } from '../worker';
+import { BaseHookSystem } from '../hooksystems/BaseHookSystem.class';
 import { Handler } from '../handler/base.class';
 
 export class InMemoryFilterModel implements FilterModel {
@@ -12,7 +12,7 @@ export class InMemoryFilterModel implements FilterModel {
     }
   } = {};
 
-  async queryHandlers<T>(filter: Filter<T>): Promise<Handler<T, any>[]> {
+  async queryHandlers<T>(filter: BaseHookSystem<T>): Promise<Handler<T, any>[]> {
 
     if (typeof(this.data[filter.baseKey]) == 'undefined') return [];
     const handlers = Object.keys(this.data[filter.baseKey]).map(handlerKey => this.data[filter.baseKey][handlerKey]);
@@ -30,7 +30,7 @@ export class InMemoryFilterModel implements FilterModel {
     }));
   }
 
-  async registerHandler<T>(obj: {filter: Filter<T>; handler: Handler<T, any>; priority?: number}): Promise<HandlerRegistration> {
+  async registerHandler<T>(obj: {filter: BaseHookSystem<T>; handler: Handler<T, any>; priority?: number}): Promise<HandlerRegistration> {
     const {filter, handler} = obj;
     if (typeof(this.data[filter.baseKey]) === 'undefined') {
       this.data[filter.baseKey] = {};

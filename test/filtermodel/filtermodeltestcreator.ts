@@ -1,5 +1,5 @@
 import { FilterModel, HandlerRegistration } from '../../src/filtermodel/filter.model.interface';
-import { Filter } from '../../src/worker';
+import { BaseHookSystem } from '../../src/hooksystems/BaseHookSystem.class';
 import { expect } from 'chai';
 import { Handler } from '../../src/handler/base.class';
 export default (modelCreator: () => Promise<FilterModel>) => {
@@ -20,7 +20,7 @@ export default (modelCreator: () => Promise<FilterModel>) => {
     }
   });
 
-  async function register<T>(model:FilterModel, obj: {filter: Filter<T>, handler:  Handler<T,any>, priority?: number}): Promise<HandlerRegistration>{
+  async function register<T>(model:FilterModel, obj: {filter: BaseHookSystem<T>, handler:  Handler<T,any>, priority?: number}): Promise<HandlerRegistration>{
     let reg = await model.registerHandler(obj);
     registrations.push(reg);
     return reg;
@@ -28,19 +28,19 @@ export default (modelCreator: () => Promise<FilterModel>) => {
 
   describe('queryHandlers/registerHandler', () => {
     it('should return empty query handlers when nothing is registered', async() => {
-      let filter = new Filter('base', model);
+      let filter = new BaseHookSystem('base', model);
       const res  = await model.queryHandlers(filter);
       expect(res).is.deep.eq([])
     });
     it('should return empty handlers if there are some registered for other key', async() => {
-      let filter = new Filter('base', model);
+      let filter = new BaseHookSystem('base', model);
       await model.registerHandler({filter: filter, handler: addOneHandler});
-      let emptyFilter = new Filter('empty', model);
+      let emptyFilter = new BaseHookSystem('empty', model);
       const res = await model.queryHandlers(emptyFilter);
       expect(res).is.deep.eq([])
     });
     it('should return single element if only one registered', async () => {
-      let filter = new Filter('base', model);
+      let filter = new BaseHookSystem('base', model);
       await register(model, {filter: filter, handler: addOneHandler})
       const res = await model.queryHandlers(filter);
       expect(res.length).is.deep.eq(1);
@@ -48,7 +48,7 @@ export default (modelCreator: () => Promise<FilterModel>) => {
     });
 
     it('should return multiple elements', async() => {
-      let filter = new Filter('base', model);
+      let filter = new BaseHookSystem('base', model);
       await register(model, {filter: filter, priority:10, handler: addOneHandler});
       await register(model, {filter: filter, priority:20, handler: errorHandler});
       const res = await model.queryHandlers(filter);
@@ -58,7 +58,7 @@ export default (modelCreator: () => Promise<FilterModel>) => {
     });
 
     it('should return multiple elements ordered', async() => {
-      let filter = new Filter('base', model);
+      let filter = new BaseHookSystem('base', model);
       await register(model, {filter: filter, priority:20, handler: errorHandler});
       await register(model, {filter: filter, priority:10, handler: addOneHandler});
       const res = await model.queryHandlers(filter);
@@ -68,7 +68,7 @@ export default (modelCreator: () => Promise<FilterModel>) => {
     });
 
     it('readding same item twice wont change the number of handlers but the order', async() => {
-      let filter = new Filter('base', model);
+      let filter = new BaseHookSystem('base', model);
       await register(model, {filter: filter, priority:10, handler: addOneHandler});
       await register(model, {filter: filter, priority:15, handler: errorHandler});
       await register(model, {filter: filter, priority:20, handler: addOneHandler});
@@ -80,14 +80,14 @@ export default (modelCreator: () => Promise<FilterModel>) => {
 
     describe('register/unregister', () => {
       it('should exclude handler if registered and then unregistered', async() => {
-        let filter = new Filter('base', model);
+        let filter = new BaseHookSystem('base', model);
         let reg = await register(model, {filter: filter, priority:10, handler: addOneHandler});
         await reg.unregister();
         const res = await model.queryHandlers(filter);
         expect(res.length).is.deep.eq(0);
       });
       it ('should return unmanipulated element if Handler was unregistered in the meanwhile', async() => {
-        let filter = new Filter('base', model);
+        let filter = new BaseHookSystem('base', model);
         let reg = await register(model, {filter: filter, priority:10, handler: addOneHandler});
         const res = await model.queryHandlers(filter);
         await reg.unregister();
@@ -99,7 +99,7 @@ export default (modelCreator: () => Promise<FilterModel>) => {
   });
 
   it('should preserve original handler should be called somehow when called from queryHandlers result', async () => {
-    let filter = new Filter('base', model);
+    let filter = new BaseHookSystem('base', model);
     await register(model, {filter: filter, handler: addOneHandler});
     const res = await model.queryHandlers(filter);
 
