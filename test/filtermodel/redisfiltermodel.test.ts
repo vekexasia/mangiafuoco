@@ -8,8 +8,8 @@ describe('RedisFilterModel', () => {
   beforeEach(async () => {
     await promisify(redisClient.flushdb, redisClient)();
   });
-  afterEach(async () => {
-    const keys = await promisify(redisClient.keys, redisClient)('*');
-    console.log(keys);
-  });
+  // afterEach(async () => {
+  //   const keys = await promisify(redisClient.keys, redisClient)('*');
+  //   console.log(keys);
+  // });
 });

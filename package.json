@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "mochatyw": "mocha-typescript-watch -p tsconfig.json -o test/mocha.opts"
+    "mochatyw": "mocha-typescript-watch -p tsconfig.json -o test/mocha.opts",
+    "lint_src": "tslint -c tslint.json src/*.ts src/**/*.ts src/**/**/*.ts",
+    "cover": "tsc  --sourceMap --target ES5 -d && nyc --reporter=lcov --reporter=html --exclude=test/**/* --exclude=node_modules mocha --opts test/mocha.opts test/",
+    "none": "echo I hate trailing commas"
   },
   "author": "",
   "license": "ISC",
@@ -14,18 +17,23 @@
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",
+    "@types/chai-as-promised": "0.0.29",
     "@types/mocha": "^2.2.33",
     "@types/node": "^6.0.52",
     "@types/redis": "^0.12.34",
     "@types/sinon": "^1.16.33",
     "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
     "es6-promise": "^4.0.5",
     "mocha": "^3.2.0",
     "mocha-typescript": "^1.0.14",
+    "nyc": "^10.0.0",
     "proxyquire": "^1.7.10",
     "redis": "^2.6.3",
+    "shx": "^0.2.1",
     "sinon": "^1.17.6",
     "source-map-support": "^0.4.6",
+    "tslint": "^4.1.1",
     "typescript": "^2.1.4"
   }
 }

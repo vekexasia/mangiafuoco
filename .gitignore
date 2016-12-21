@@ -1,4 +1,8 @@
 src/**/*.js
 src/**/*.js.map
+src/**/*.d.ts
 test/**/*.js
 test/**/*.js.map
+dist/
+.nyc_output
+coverage

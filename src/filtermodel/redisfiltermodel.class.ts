@@ -2,23 +2,22 @@ import { FilterModel, HandlerRegistration } from './filter.model.interface';
 import { BaseHookSystem } from '../hooksystems/BaseHookSystem.class';
 import { Handler } from '../handler/base.class';
 import { RedisClient } from 'redis';
-
-const promisify = require('es6-promisify') as (...args) => (...args) => Promise<any>;
+import * as promisify from 'es6-promisify' ;
 export class RedisFilterModel implements FilterModel {
   private zadd: (k: string, score: number, member: string) => Promise<string>;
   private zrange: (k: string, start: number, end: number, withscores?: string) => Promise<string[]>;
   private incr: (k: string) => Promise<string>;
 
   constructor(private redisClient: RedisClient, private redisClientCreator: () => RedisClient) {
-    this.zadd   = promisify(redisClient.zadd, redisClient);
+    this.zadd = promisify(redisClient.zadd, redisClient);
     this.zrange = promisify(redisClient.zrange, redisClient);
-    this.incr   = promisify(redisClient.incr, redisClient);
+    this.incr = promisify(redisClient.incr, redisClient);
   }
 
   async blpop(what: string, timeout: number) {
     const redisClient = this.redisClientCreator();
-    const blpop       = promisify(redisClient.blpop, redisClient);
-    const toRet       = await blpop(what, timeout);
+    const blpop = promisify(redisClient.blpop, redisClient);
+    const toRet = await blpop(what, timeout);
 
     redisClient.quit();
     return toRet;
@@ -29,7 +28,7 @@ export class RedisFilterModel implements FilterModel {
     return handlerKeys
       .map((handlerKey) => {
         return new Handler(handlerKey, async(obj: T) => {
-          const rpush  = promisify(this.redisClient.rpush, this.redisClient);
+          const rpush = promisify(this.redisClient.rpush, this.redisClient);
           const workID = await this.incr('handlers:work:id');
 
           const workDefinition = JSON.stringify({w: workID, d: obj});
@@ -63,21 +62,19 @@ export class RedisFilterModel implements FilterModel {
       ]
     );
 
-
-
-    const oldHandler     = obj.handler.handle;
-    const redisClient    = this.redisClientCreator();
-    const blpop          = promisify(redisClient.blpop, redisClient);
-    const rpush          = promisify(this.redisClient.rpush, this.redisClient);
-    const zrem           = promisify(this.redisClient.zrem, this.redisClient);
+    const oldHandler = obj.handler.handle;
+    const redisClient = this.redisClientCreator();
+    const blpop = promisify(redisClient.blpop, redisClient);
+    const rpush = promisify(this.redisClient.rpush, this.redisClient);
+    const zrem = promisify(this.redisClient.zrem, this.redisClient);
     const unsubscribeKey = `handlers:unsubscribe:${obj.hookSystem.baseKey}:${obj.handler.key}:${theID}`;
 
     //let pong = await ping();
 
-    const bit              = async() => {
+    const bit = async() => {
 
       let workTicket = null;
-      let list       = null;
+      let list = null;
       try {
         [list, workTicket] = await blpop(
           unsubscribeKey,
@@ -88,10 +85,10 @@ export class RedisFilterModel implements FilterModel {
       }
       if (list === unsubscribeKey) {
         await zrem(`handlers:${obj.hookSystem.baseKey}`, obj.handler.key);
-        await rpush(unsubscribeKey, 'OK')
+        await rpush(unsubscribeKey, 'OK');
       } else if (workTicket != null) {
         // get data
-        const {w:workID, d:data} = JSON.parse(workTicket) as {w: number, d: T};
+        const {w: workID, d: data} = JSON.parse(workTicket) as {w: number, d: T};
 
         // notify that we're processing
         await rpush(`handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}:${workID}:processing`, workID);
@@ -101,14 +98,16 @@ export class RedisFilterModel implements FilterModel {
         await rpush(`handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}:${workID}:done`, JSON.stringify(res));
       }
     };
-    let registered         = true;
+    let registered = true;
 
     bit();
 
     return {
       id: theID,
       async unregister()  {
-        if (!registered) return true;
+        if (!registered) {
+          return true;
+        }
         registered = false;
         await rpush(unsubscribeKey, '1');
         try {

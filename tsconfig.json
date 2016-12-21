@@ -4,8 +4,13 @@
     "module"                : "commonjs",
     "emitDecoratorMetadata" : true,
     "experimentalDecorators": true,
+    "declaration"           : true,
     "sourceMap"             : true,
+    "noUnusedLocals"        : true,
     "moduleResolution"      : "node",
+    "noImplicitReturns"     : true,
+    "noImplicitThis"        : true,
+    "removeComments"        : false,
     "lib"                   : [
       "es2015.promise",
       "es6"

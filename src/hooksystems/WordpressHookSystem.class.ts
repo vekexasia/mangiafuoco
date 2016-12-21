@@ -1,50 +1,50 @@
-
 import { HandlerRegistration, FilterModel } from '../filtermodel/filter.model.interface';
 import { Handler } from '../handler/base.class';
 import { EasyHookSystem } from './EasyHookSystem.class';
 export class WordPressHookSystem {
-  private easyFilter: EasyHookSystem;
   private localRegistrations: {[k: string]: HandlerRegistration} = {};
-  constructor(model: FilterModel) {
-    this.easyFilter = new EasyHookSystem(model);
+
+  constructor(model: FilterModel, private easyFilter: EasyHookSystem = new EasyHookSystem(model)) {
   }
 
-  add_action(action:string, handler:Handler<any, any>, priority:number = 10): Promise<true> {
-    return this.add('action',action, handler, priority);
+  add_action(action: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
+    return this.add('action', action, handler, priority);
   }
 
-  async do_action(action: string, payload?:any): Promise<any> {
-    await this.easyFilter.do(action, payload);
+  do_action(action: string, payload?: any): Promise<any> {
+    return this.easyFilter.do(action, payload);
   }
 
-  add_filter(filter:string, handler:Handler<any, any>, priority:number = 10): Promise<true> {
+  add_filter(filter: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
     return this.add('filter', filter, handler, priority);
   }
 
-  apply_filters<T,R extends T>(filter: string, payload?:T): Promise<R> {
-    return this.easyFilter.map<T,R>(filter, payload);
+  apply_filters<T, R extends T>(filter: string, payload?: T): Promise<R> {
+    return this.easyFilter.map<T, R>(filter, payload);
   }
 
-  remove_action(action:string, handler:Handler<any,any>|string, priority:number=10): Promise<boolean> {
+  remove_action(action: string, handler: Handler<any, any>|string, priority: number = 10): Promise<boolean> {
     return this.remove('action', action, handler, priority);
   }
 
-  remove_filter(action:string, handler:Handler<any,any>|string, priority:number=10): Promise<boolean> {
+  remove_filter(action: string, handler: Handler<any, any>|string, priority: number = 10): Promise<boolean> {
     return this.remove('filter', action, handler, priority);
   }
 
-  private async add(prefix:string, action:string, handler:Handler<any, any>, priority:number = 10): Promise<true> {
+  private async add(prefix: string, action: string, handler: Handler<any, any>, priority: number): Promise<true> {
     this.localRegistrations[`${prefix}:${action}:${handler.key}:${priority}`] = await this.easyFilter.register(
       action,
       // re-wrap is necessary cause in wp the same handler can be registered on 1+ diff priorities.
       // while this library only allows one single handler key per `action`
-      new Handler<any,any>(`${handler.key}_${priority}`, async (obj) => handler.handle(obj)),
+      new Handler<any, any>(`${handler.key}_${priority}`, (obj) => {
+        return handler.handle(obj);
+      }),
       priority);
     return true;
   }
 
-  private async remove(prefix: string, what:string, handler:Handler<any,any>|string, priority:number=10): Promise<boolean> {
-    let handlerKey:string;
+  private async remove(prefix: string, what: string, handler: Handler<any, any>|string, priority: number): Promise<boolean> {
+    let handlerKey: string;
     if (typeof(handler) !== 'string') {
       handlerKey = handler.key;
     } else {

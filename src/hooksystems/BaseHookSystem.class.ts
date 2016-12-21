@@ -4,7 +4,7 @@ export class BaseHookSystem<T> {
   constructor(public baseKey: string, private model: FilterModel) {
   }
 
-  addHandler(obj: {handler: Handler<T,any>, priority?: number}): Promise<HandlerRegistration> {
+  addHandler(obj: {handler: Handler<T, any>, priority?: number}): Promise<HandlerRegistration> {
     return this.model.registerHandler({
       hookSystem: this,
       handler: obj.handler,
@@ -16,13 +16,13 @@ export class BaseHookSystem<T> {
     const queryHandlers = await this.model.queryHandlers(this);
     let toRet = obj;
     for (let i = 0; i < queryHandlers.length; i++) {
-      let h: Handler<T,R> = queryHandlers[i];
+      let h: Handler<T, R> = queryHandlers[i];
       toRet = await h.handle(toRet);
     }
     return toRet as R;
   }
 
-  async processParallel<R extends T>(obj:T): Promise<R[]> {
+  async processParallel<R extends T>(obj: T): Promise<R[]> {
     const queryHandlers = await this.model.queryHandlers(this);
     return Promise.all<R>(queryHandlers.map(h => h.handle(obj)));
   }
