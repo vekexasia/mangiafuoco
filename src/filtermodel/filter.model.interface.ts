@@ -8,7 +8,7 @@ export interface HandlerRegistration {
 export interface FilterModel {
   queryHandlers<T>(filter: BaseHookSystem<T>): Promise<(Handler<T,any>)[]>;
 
-  registerHandler<T>(obj: {filter: BaseHookSystem<T>, handler:  Handler<T,any>, priority?: number}): Promise<HandlerRegistration>;
+  registerHandler<T>(obj: {hookSystem: BaseHookSystem<T>, handler:  Handler<T,any>, priority?: number}): Promise<HandlerRegistration>;
 
 
 }

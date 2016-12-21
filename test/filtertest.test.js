@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const worker_1 = require("../src/worker");
+const BaseHookSystem_class_1 = require("../src/hooksystems/BaseHookSystem.class");
 const chai_1 = require("chai");
 const inmemoryfiltermodel_class_1 = require("../src/filtermodel/inmemoryfiltermodel.class");
 const base_class_1 = require("../src/handler/base.class");
@@ -16,21 +16,21 @@ describe('FilterTest', () => {
     describe('addHandler', () => {
         it('should call model addHandler method', () => __awaiter(this, void 0, void 0, function* () {
             let inMemoryFilterModel = new inmemoryfiltermodel_class_1.InMemoryFilterModel();
-            let filter = new worker_1.Filter("adder", inMemoryFilterModel);
+            let filter = new BaseHookSystem_class_1.BaseHookSystem("adder", inMemoryFilterModel);
             const theSpy = sinon_1.spy(inMemoryFilterModel, 'registerHandler');
             let handler = base_class_1.Handler.fromCback('haha', () => {
             });
             yield filter.addHandler({ handler });
             chai_1.expect(theSpy.called).is.true;
             chai_1.expect(theSpy.callCount).is.eq(1);
-            chai_1.expect(theSpy.args[0][0].filter).is.eq(filter);
+            chai_1.expect(theSpy.args[0][0].hookSystem).is.eq(filter);
             chai_1.expect(theSpy.args[0][0].handler).is.eq(handler);
         }));
     });
     describe('process', () => {
         let filter;
         beforeEach(() => {
-            filter = new worker_1.Filter("adder", new inmemoryfiltermodel_class_1.InMemoryFilterModel());
+            filter = new BaseHookSystem_class_1.BaseHookSystem("adder", new inmemoryfiltermodel_class_1.InMemoryFilterModel());
         });
         it('shouldnt do anything and return original value if no handlers', () => __awaiter(this, void 0, void 0, function* () {
             let res = yield filter.process(1);
@@ -49,7 +49,7 @@ describe('FilterTest', () => {
     describe('processParallel', () => {
         let filter;
         beforeEach(() => {
-            filter = new worker_1.Filter("adder", new inmemoryfiltermodel_class_1.InMemoryFilterModel());
+            filter = new BaseHookSystem_class_1.BaseHookSystem("adder", new inmemoryfiltermodel_class_1.InMemoryFilterModel());
         });
         it('shouldnt do anything and return empty array if no handlers', () => __awaiter(this, void 0, void 0, function* () {
             chai_1.expect(yield filter.processParallel(1)).is.deep.eq([]);

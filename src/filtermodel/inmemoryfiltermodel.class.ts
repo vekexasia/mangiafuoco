@@ -30,19 +30,19 @@ export class InMemoryFilterModel implements FilterModel {
     }));
   }
 
-  async registerHandler<T>(obj: {filter: BaseHookSystem<T>; handler: Handler<T, any>; priority?: number}): Promise<HandlerRegistration> {
-    const {filter, handler} = obj;
-    if (typeof(this.data[filter.baseKey]) === 'undefined') {
-      this.data[filter.baseKey] = {};
+  async registerHandler<T>(obj: {hookSystem: BaseHookSystem<T>; handler: Handler<T, any>; priority?: number}): Promise<HandlerRegistration> {
+    const {hookSystem, handler} = obj;
+    if (typeof(this.data[hookSystem.baseKey]) === 'undefined') {
+      this.data[hookSystem.baseKey] = {};
     }
-    this.data[filter.baseKey][handler.key] = {
+    this.data[hookSystem.baseKey][handler.key] = {
       priority: obj.priority || 10,
       handler : handler
     };
     return {
       id: handler.key,
       unregister: async () => {
-        delete this.data[filter.baseKey][handler.key];
+        delete this.data[hookSystem.baseKey][handler.key];
         return true;
       }
     }

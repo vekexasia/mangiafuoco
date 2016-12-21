@@ -15,7 +15,7 @@ describe('FilterTest', () => {
       await filter.addHandler({handler});
       expect(theSpy.called).is.true;
       expect(theSpy.callCount).is.eq(1);
-      expect(theSpy.args[0][0].filter).is.eq(filter);
+      expect(theSpy.args[0][0].hookSystem).is.eq(filter);
       expect(theSpy.args[0][0].handler).is.eq(handler);
     });
   });

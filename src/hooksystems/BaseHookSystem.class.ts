@@ -6,7 +6,7 @@ export class BaseHookSystem<T> {
 
   addHandler(obj: {handler: Handler<T,any>, priority?: number}): Promise<HandlerRegistration> {
     return this.model.registerHandler({
-      filter: this,
+      hookSystem: this,
       handler: obj.handler,
       priority: obj.priority,
     });
