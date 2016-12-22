@@ -2,7 +2,7 @@ import { FilterModel, HandlerRegistration } from './filter.model.interface';
 import { BaseHookSystem } from '../hooksystems/BaseHookSystem.class';
 import { Handler } from '../handler/base.class';
 import { RedisClient } from 'redis';
-import * as promisify from 'es6-promisify' ;
+import * as promisify from 'es6-promisify';
 export class RedisFilterModel implements FilterModel {
   private zadd: (k: string, score: number, member: string) => Promise<string>;
   private zrange: (k: string, start: number, end: number, withscores?: string) => Promise<string[]>;
@@ -70,35 +70,30 @@ export class RedisFilterModel implements FilterModel {
     const unsubscribeKey = `handlers:unsubscribe:${obj.hookSystem.baseKey}:${obj.handler.key}:${theID}`;
 
     //let pong = await ping();
+    let registered = true;
 
     const bit = async() => {
-
-      let workTicket = null;
-      let list = null;
-      try {
-        [list, workTicket] = await blpop(
+      while (registered) {
+        let [list, workTicket] = await blpop(
           unsubscribeKey,
           `handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}`
           , 0);
-      } catch (e) {
-        console.log(e);
-      }
-      if (list === unsubscribeKey) {
-        await zrem(`handlers:${obj.hookSystem.baseKey}`, obj.handler.key);
-        await rpush(unsubscribeKey, 'OK');
-      } else if (workTicket != null) {
-        // get data
-        const {w: workID, d: data} = JSON.parse(workTicket) as {w: number, d: T};
+        if (list === unsubscribeKey) {
+          await zrem(`handlers:${obj.hookSystem.baseKey}`, obj.handler.key);
+          await rpush(unsubscribeKey, 'OK');
+        } else if (workTicket != null) {
+          // get data
+          const {w: workID, d: data} = JSON.parse(workTicket) as {w: number, d: T};
 
-        // notify that we're processing
-        await rpush(`handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}:${workID}:processing`, workID);
+          // notify that we're processing
+          await rpush(`handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}:${workID}:processing`, workID);
 
-        //
-        const res = await oldHandler.call(obj.handler, data);
-        await rpush(`handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}:${workID}:done`, JSON.stringify(res));
+          //
+          const res = await oldHandler.call(obj.handler, data);
+          await rpush(`handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}:${workID}:done`, JSON.stringify(res));
+        }
       }
     };
-    let registered = true;
 
     bit();
 

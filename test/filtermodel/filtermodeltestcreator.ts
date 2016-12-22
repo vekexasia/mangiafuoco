@@ -34,7 +34,7 @@ export default (modelCreator: () => Promise<FilterModel>) => {
     });
     it('should return empty handlers if there are some registered for other key', async() => {
       let filter = new BaseHookSystem('base', model);
-      await model.registerHandler({hookSystem: filter, handler: addOneHandler});
+      await register(model, {hookSystem: filter, handler: addOneHandler});
       let emptyFilter = new BaseHookSystem('empty', model);
       const res = await model.queryHandlers(emptyFilter);
       expect(res).is.deep.eq([]);
@@ -103,8 +103,8 @@ export default (modelCreator: () => Promise<FilterModel>) => {
     await register(model, {hookSystem: filter, handler: addOneHandler});
     const res = await model.queryHandlers(filter);
 
-    const finalRes = await res[0].handle(1);
-    expect(finalRes).to.be.deep.eq(1 + 1);
+    expect(await res[0].handle(1)).to.be.deep.eq(1 + 1);
+    expect(await res[0].handle(2)).to.be.deep.eq(2 + 1);
   });
 
 };

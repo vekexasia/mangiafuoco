@@ -7,7 +7,7 @@ describe('RedisFilterModel', () => {
   testCreator(async () => new RedisFilterModel(redisClient, () => redis.createClient()));
   beforeEach(async () => {
     await promisify(redisClient.flushdb, redisClient)();
-  });
+  });;
   // afterEach(async () => {
   //   const keys = await promisify(redisClient.keys, redisClient)('*');
   //   console.log(keys);
