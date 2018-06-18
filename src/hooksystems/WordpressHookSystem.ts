@@ -8,7 +8,6 @@ export class WordPressHookSystem {
   public constructor(model: IFilterModel, private easyFilter: EasyHookSystem = new EasyHookSystem(model)) {
   }
 
-
   public add_action(action: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
     return this.add('action', action, handler, priority);
   }

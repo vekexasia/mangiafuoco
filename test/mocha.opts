@@ -3,3 +3,4 @@
 --reporter spec
 --timeout 10000
 --require ts-node/register
+--exit
