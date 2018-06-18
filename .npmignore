@@ -1,2 +1,5 @@
 docs
 test
+coverage
+.idea
+.nyc_output

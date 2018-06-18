@@ -1,4 +1,5 @@
 # MangiaFuoco
+[![npm](https://img.shields.io/npm/v/mangiafuoco.svg)](https://npmjs.org/package/mangiafuoco) [![Build Status](https://travis-ci.org/vekexasia/mangiafuoco.svg?branch=master)](https://travis-ci.org/vekexasia/mangiafuoco) [![Coverage Status](https://coveralls.io/repos/github/vekexasia/mangiafuoco/badge.svg?branch=master)](https://coveralls.io/github/vekexasia/mangiafuoco?branch=master)
 
 This is a way to decouple application parts. It could be used to solve different use cases:
 
