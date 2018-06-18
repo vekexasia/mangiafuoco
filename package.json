@@ -1,15 +1,21 @@
 {
   "name": "mangiafuoco",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "An efficient nodejs hooking system.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "mocha ./test/**/*.spec.ts",
     "lint_src": "tslint -c tslint.json src/*.ts src/**/*.ts src/**/**/*.ts",
     "cover": "nyc -e '.ts' -x 'tests/**' -r lcov npm run test && cat ./coverage/lcov.info | coveralls",
-    "transpile": "shx rm -rf dist/; tsc",
+    "transpile": "shx rm -rf dist/; tsc -d",
+    "prepublish": "shx rm -rf ./dist/ && npm run transpile",
     "none": "echo I hate trailing commas"
   },
+  "keywords": [
+    "hook system",
+    "wordpress"
+  ],
   "author": "Andrea Baccega",
   "license": "MIT",
   "dependencies": {
