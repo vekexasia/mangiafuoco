@@ -1,34 +1,26 @@
-import { FilterModel, HandlerRegistration } from './filter.model.interface';
-import { BaseHookSystem } from '../hooksystems/BaseHookSystem.class';
-import { Handler } from '../handler/base.class';
-import { RedisClient } from 'redis';
 import * as promisify from 'es6-promisify';
-export class RedisFilterModel implements FilterModel {
+import { RedisClient } from 'redis';
+import { Handler } from '../handler';
+import { BaseHookSystem } from '../hooksystems';
+import { IFilterModel, IHandlerRegistration } from './filtermodel';
+
+export class RedisFilterModel implements IFilterModel {
   private zadd: (k: string, score: number, member: string) => Promise<string>;
   private zrange: (k: string, start: number, end: number, withscores?: string) => Promise<string[]>;
   private incr: (k: string) => Promise<string>;
 
   constructor(private redisClient: RedisClient, private redisClientCreator: () => RedisClient) {
-    this.zadd = promisify(redisClient.zadd, redisClient);
+    this.zadd   = promisify(redisClient.zadd, redisClient);
     this.zrange = promisify(redisClient.zrange, redisClient);
-    this.incr = promisify(redisClient.incr, redisClient);
+    this.incr   = promisify(redisClient.incr, redisClient);
   }
 
-  async blpop(what: string, timeout: number) {
-    const redisClient = this.redisClientCreator();
-    const blpop = promisify(redisClient.blpop, redisClient);
-    const toRet = await blpop(what, timeout);
-
-    redisClient.quit();
-    return toRet;
-  }
-
-  async queryHandlers<T>(filter: BaseHookSystem<T>): Promise<Handler<T, any>[]> {
+  public async queryHandlers<T>(filter: BaseHookSystem<T>): Promise<Array<Handler<T, any>>> {
     const handlerKeys = await this.zrange(`handlers:${filter.baseKey}`, 0, -1);
     return handlerKeys
       .map((handlerKey) => {
-        return new Handler(handlerKey, async(obj: T) => {
-          const rpush = promisify(this.redisClient.rpush, this.redisClient);
+        return new Handler(handlerKey, async (obj: T) => {
+          const rpush  = promisify(this.redisClient.rpush, this.redisClient);
           const workID = await this.incr('handlers:work:id');
 
           const workDefinition = JSON.stringify({w: workID, d: obj});
@@ -42,39 +34,32 @@ export class RedisFilterModel implements FilterModel {
             return obj;
           }
           const res = await this.blpop(`handlers:jobs:${filter.baseKey}:${handlerKey}:${workID}:done`, 0);
-          //if (idx === handlerKeys.length-1) {
-          //  const del = promisify(this.redisClient.del, this.redisClient);
-          //  await Promise.all([
-          //    del(`handlers:jobs:data:${filter.baseKey}`),
-          //
-          //  ]);
-          //}
           return JSON.parse(res[1]);
         });
       });
   }
 
-  async registerHandler<T>(obj: {hookSystem: BaseHookSystem<T>; handler: Handler<T, any>; priority?: number}): Promise<HandlerRegistration> {
-    let [, theID] = await Promise.all(
+  // tslint:disable-next-line
+  public async registerHandler<T>(obj: { hookSystem: BaseHookSystem<T>; handler: Handler<T, any>; priority?: number }): Promise<IHandlerRegistration> {
+    const [, theID] = await Promise.all(
       [
         this.zadd(`handlers:${obj.hookSystem.baseKey}`, obj.priority || 10, obj.handler.key),
-        this.incr('handlers:id')
+        this.incr('handlers:id'),
       ]
     );
 
-    const oldHandler = obj.handler.handle;
-    const redisClient = this.redisClientCreator();
-    const blpop = promisify(redisClient.blpop, redisClient);
-    const rpush = promisify(this.redisClient.rpush, this.redisClient);
-    const zrem = promisify(this.redisClient.zrem, this.redisClient);
+    const oldHandler     = obj.handler.handle;
+    const redisClient    = this.redisClientCreator();
+    const blpop          = promisify(redisClient.blpop, redisClient);
+    const rpush          = promisify(this.redisClient.rpush, this.redisClient);
+    const zrem           = promisify(this.redisClient.zrem, this.redisClient);
     const unsubscribeKey = `handlers:unsubscribe:${obj.hookSystem.baseKey}:${obj.handler.key}:${theID}`;
 
-    //let pong = await ping();
     let registered = true;
 
-    const bit = async() => {
+    const bit = async () => {
       while (registered) {
-        let [list, workTicket] = await blpop(
+        const [list, workTicket] = await blpop(
           unsubscribeKey,
           `handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}`
           , 0);
@@ -83,7 +68,7 @@ export class RedisFilterModel implements FilterModel {
           await rpush(unsubscribeKey, 'OK');
         } else if (workTicket != null) {
           // get data
-          const {w: workID, d: data} = JSON.parse(workTicket) as {w: number, d: T};
+          const {w: workID, d: data} = JSON.parse(workTicket) as { w: number, d: T };
 
           // notify that we're processing
           await rpush(`handlers:jobs:${obj.hookSystem.baseKey}:${obj.handler.key}:${workID}:processing`, workID);
@@ -99,7 +84,7 @@ export class RedisFilterModel implements FilterModel {
 
     return {
       id: theID,
-      async unregister()  {
+      async unregister() {
         if (!registered) {
           return true;
         }
@@ -110,12 +95,21 @@ export class RedisFilterModel implements FilterModel {
         } catch (e) {
           // connection already removed probably unregistered
           // received same disconnect request generated from unregister. (AKA Already unregistered but still connected)
-          //await zrem(`handlers:${obj.filter.baseKey}`, obj.handler.key);
+          // await zrem(`handlers:${obj.filter.baseKey}`, obj.handler.key);
         }
         redisClient.quit();
         return true;
-      }
+      },
     };
+  }
+
+  private async blpop(what: string, timeout: number) {
+    const redisClient = this.redisClientCreator();
+    const blpop       = promisify(redisClient.blpop, redisClient);
+    const toRet       = await blpop(what, timeout);
+
+    redisClient.quit();
+    return toRet;
   }
 
 }

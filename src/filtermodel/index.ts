@@ -1,3 +1,3 @@
-export * from './filter.model.interface'
-export * from './inmemoryfiltermodel.class'
-export * from './redisfiltermodel.class'
+export * from './filtermodel';
+export * from './inmemoryfiltermodel';
+export * from './redisfiltermodel';

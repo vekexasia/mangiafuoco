@@ -49,7 +49,7 @@ function login(user, pass) {
 
 After 2 months. the boss gets to you and he says that he does not want to change it's password every month and you need to change your login function again adding even more complexity.
 
-PROJNAME to the rescue. What about having the login function doing something like:
+mangiafuoco to the rescue. What about having the login function doing something like:
 ```javascript
 function login(user, pass) {
   return userModel.findUser(user,pass)

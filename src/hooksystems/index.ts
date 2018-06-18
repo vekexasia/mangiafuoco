@@ -1,3 +1,3 @@
-export * from './BaseHookSystem.class'
-export * from './EasyHookSystem.class'
-export * from './WordpressHookSystem.class'
+export * from './BaseHookSystem';
+export * from './EasyHookSystem';
+export * from './WordpressHookSystem';

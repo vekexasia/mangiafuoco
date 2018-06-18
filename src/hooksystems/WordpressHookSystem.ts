@@ -1,33 +1,34 @@
-import { HandlerRegistration, FilterModel } from '../filtermodel/filter.model.interface';
-import { Handler } from '../handler/base.class';
-import { EasyHookSystem } from './EasyHookSystem.class';
-export class WordPressHookSystem {
-  private localRegistrations: {[k: string]: HandlerRegistration} = {};
+import { IFilterModel, IHandlerRegistration } from '../filtermodel';
+import { Handler } from '../handler';
+import { EasyHookSystem } from './EasyHookSystem';
 
-  constructor(model: FilterModel, private easyFilter: EasyHookSystem = new EasyHookSystem(model)) {
+export class WordPressHookSystem {
+  private localRegistrations: {[k: string]: IHandlerRegistration} = {};
+
+  public constructor(model: IFilterModel, private easyFilter: EasyHookSystem = new EasyHookSystem(model)) {
   }
 
-  add_action(action: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
+  public add_action(action: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
     return this.add('action', action, handler, priority);
   }
 
-  do_action(action: string, payload?: any): Promise<any> {
+  public do_action(action: string, payload?: any): Promise<any> {
     return this.easyFilter.do(action, payload);
   }
 
-  add_filter(filter: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
+  public add_filter(filter: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
     return this.add('filter', filter, handler, priority);
   }
 
-  apply_filters<T, R extends T>(filter: string, payload?: T): Promise<R> {
+  public apply_filters<T, R extends T>(filter: string, payload?: T): Promise<R> {
     return this.easyFilter.map<T, R>(filter, payload);
   }
 
-  remove_action(action: string, handler: Handler<any, any>|string, priority: number = 10): Promise<boolean> {
+  public remove_action(action: string, handler: Handler<any, any>|string, priority: number = 10): Promise<boolean> {
     return this.remove('action', action, handler, priority);
   }
 
-  remove_filter(action: string, handler: Handler<any, any>|string, priority: number = 10): Promise<boolean> {
+  public remove_filter(action: string, handler: Handler<any, any>|string, priority: number = 10): Promise<boolean> {
     return this.remove('filter', action, handler, priority);
   }
 
@@ -43,6 +44,7 @@ export class WordPressHookSystem {
     return true;
   }
 
+  // tslint:disable-next-line max-line-length
   private async remove(prefix: string, what: string, handler: Handler<any, any>|string, priority: number): Promise<boolean> {
     let handlerKey: string;
     if (typeof(handler) !== 'string') {
@@ -51,7 +53,7 @@ export class WordPressHookSystem {
       handlerKey = handler;
     }
 
-    let localRegistration = this.localRegistrations[`${prefix}:${what}:${handlerKey}:${priority}`];
+    const localRegistration = this.localRegistrations[`${prefix}:${what}:${handlerKey}:${priority}`];
     if (typeof(localRegistration) === 'undefined') {
       return false;
     }

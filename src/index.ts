@@ -1,3 +1,3 @@
-import * as Models from './filtermodel';
-import {Handler} from './handler';
-export {Models, Handler};
+export * from './filtermodel';
+export * from './handler';
+export * from './hooksystems';

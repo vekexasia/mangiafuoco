@@ -1,15 +1,13 @@
-import { FilterModel, HandlerRegistration } from '../filtermodel/filter.model.interface';
-import { BaseHookSystem } from './BaseHookSystem.class';
-import { Handler } from '../handler/base.class';
+import { IFilterModel, IHandlerRegistration } from '../filtermodel';
+import { Handler } from '../handler';
+import { BaseHookSystem } from './BaseHookSystem';
+
 export class EasyHookSystem {
-  constructor(private model: FilterModel) {
+  public constructor(private model: IFilterModel) {
   }
 
-  private getFilter<T>(eventName: string) {
-    return new BaseHookSystem<T>(eventName, this.model);
-  }
-
-  async register<T>(eventName: string, handler: Handler<T, any>, priority: number = 10): Promise<HandlerRegistration> {
+  // tslint:disable-next-line max-line-length
+  public async register<T>(eventName: string, handler: Handler<T, any>, priority: number = 10): Promise<IHandlerRegistration> {
     return this.getFilter(eventName)
       .addHandler({handler, priority});
   }
@@ -21,9 +19,9 @@ export class EasyHookSystem {
    * @param [payload=null] the payload that might be used by handlers. Ex: { amount: 100 }
    * @returns {Promise<T[]>}
    */
-  async do<T>(eventName: string, payload: T = null) {
+  public async do<T>(eventName: string, payload: T = null) {
     return this.getFilter(eventName)
-      .processParallel(payload);
+      .parallel(payload);
   }
 
   /**
@@ -32,13 +30,12 @@ export class EasyHookSystem {
    * @param [payload=null] the payload sent to first handler: Ex: 'me@andreabaccega.com'
    * @returns {Promise<T>|Promise<R>}
    */
-  async map<T>(eventName: string, payload?: T): Promise<T>;
-  async map<T, R extends T>(eventName: string, payload?: T): Promise<R>;
-  async map<T>(eventName: string, payload: T = null) {
+  public async map<T>(eventName: string, payload?: T): Promise<T>;
+  public async map<T, R extends T>(eventName: string, payload?: T): Promise<R>;
+  public async map<T>(eventName: string, payload: T = null) {
     return this.getFilter(eventName)
-      .process(payload);
+      .series(payload);
   }
-
   /**
    * emits the event to all handlers parallelly but does not wait for the handlers
    * to complete their execution.
@@ -46,11 +43,15 @@ export class EasyHookSystem {
    * @param payload
    * @returns {boolean}
    */
-  enqueueDo<T>(eventName: string, payload: T = null): true {
-    setImmediate(async() => {
+  public enqueueDo<T>(eventName: string, payload: T = null): true {
+    setImmediate(async () => {
       await this.do(eventName, payload);
     });
     return true;
+  }
+
+  private getFilter<T>(eventName: string) {
+    return new BaseHookSystem<T>(eventName, this.model);
   }
 
 }

@@ -3,14 +3,10 @@ language: node_js
 sudo: false
 
 node_js:
-  - '4.2.2'
-  - '6'
-
-before_install:
-  - npm install -g npm@3
+  - '8'
 
 install:
-  - npm install && npm run lint_src
+  - npm install && npm run lint
 
 cache:
   directories:

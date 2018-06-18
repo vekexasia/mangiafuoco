@@ -1,22 +1,25 @@
 {
   "compilerOptions": {
-    "target"                : "es6",
-    "module"                : "commonjs",
-    "emitDecoratorMetadata" : true,
-    "experimentalDecorators": true,
-    "declaration"           : true,
-    "sourceMap"             : true,
-    "noUnusedLocals"        : true,
-    "moduleResolution"      : "node",
-    "noImplicitReturns"     : true,
-    "noImplicitThis"        : true,
-    "removeComments"        : false,
-    "lib"                   : [
-      "es2015.promise",
-      "es6"
+    "target"                      : "es2017",
+    "module"                      : "commonjs",
+    "emitDecoratorMetadata"       : true,
+    "experimentalDecorators"      : true,
+    "allowJs"                     : true,
+    "moduleResolution"            : "node",
+    "outDir"                      : "dist",
+    "allowSyntheticDefaultImports": true,
+    "inlineSourceMap"             : true,
+    "inlineSources"               : true,
+    "lib"                         : [
+      "dom",
+      "es7"
     ]
   },
   "exclude"        : [
-    "node_modules/"
+    "test",
+    "node_modules",
+    "public",
+    "dist",
+    "coverage"
   ]
 }
