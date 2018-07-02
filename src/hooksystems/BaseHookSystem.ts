@@ -13,19 +13,19 @@ export class BaseHookSystem<T> {
     });
   }
 
-  public async series<R extends T>(obj: T): Promise<R> {
+  public async series<R extends T>(obj: T, ...rest: any[]): Promise<R> {
     const queryHandlers = await this.model.queryHandlers(this);
     let toRet           = obj;
     for (const queryHandler of queryHandlers) {
-      toRet = await queryHandler.handle(toRet);
+      toRet = await queryHandler.handle(toRet, ...rest);
     }
     return toRet as R;
   }
 
-  public async parallel<R extends T>(obj: T): Promise<R[]> {
+  public async parallel<R extends T>(obj: T, ...rest: any[]): Promise<R[]> {
     const queryHandlers = await this.model.queryHandlers(this);
     return Promise.all<R>(queryHandlers
-      .map((handler) => handler.handle(obj))
+      .map((handler) => handler.handle(obj, ...rest))
     );
   }
 

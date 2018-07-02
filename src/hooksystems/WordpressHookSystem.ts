@@ -12,16 +12,20 @@ export class WordPressHookSystem {
     return this.add('action', action, handler, priority);
   }
 
-  public do_action(action: string, payload?: any): Promise<any> {
-    return this.easyFilter.do(`action_${action}`, payload);
+  public do_action(action: string, payload?: any, ...args: any[]): Promise<any> {
+    return this.easyFilter.do(`action_${action}`, payload, ...args);
+  }
+
+  public do_action_parallel(action: string, payload?: any, ...args: any[]): Promise<any> {
+    return this.easyFilter.map(`action_${action}`, payload, ...args);
   }
 
   public add_filter(filter: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
     return this.add('filter', filter, handler, priority);
   }
 
-  public apply_filters<T, R extends T>(filter: string, payload?: T): Promise<R> {
-    return this.easyFilter.map<T, R>(`filter_${filter}`, payload);
+  public apply_filters<T, R extends T>(filter: string, payload?: T, ...args: any[]): Promise<R> {
+    return this.easyFilter.map<T, R>(`filter_${filter}`, payload, ...args);
   }
 
   public remove_action(action: string, handler: Handler<any, any> | string, priority: number = 10): Promise<boolean> {
@@ -37,8 +41,8 @@ export class WordPressHookSystem {
       `${prefix}_${action}`,
       // re-wrap is necessary cause in wp the same handler can be registered on 1+ diff priorities.
       // while this library only allows one single handler key per `action`
-      new Handler<any, any>(`${handler.key}_${priority}`, (obj) => {
-        return handler.handle(obj);
+      new Handler<any, any>(`${handler.key}_${priority}`, (obj, ...rest) => {
+        return handler.handle(obj, ...rest);
       }),
       priority);
     return true;
@@ -61,43 +65,4 @@ export class WordPressHookSystem {
     return localRegistration.unregister();
   }
 
-}
-
-/**
- * Method decorator for actions.
- */
-export function WPAction<T>(hookSystem: () => WordPressHookSystem, action?: string) {
-  return (target: T,
-          method: string,
-          descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>) => {
-    const oldValue = descriptor.value;
-
-    const preName = `${target.constructor.name}.pre.${action || method}`;
-    const postName = `${target.constructor.name}.post.${action || method}`;
-    descriptor.value = async function decorateAction(...args: any[]) {
-      await hookSystem().do_action(preName, args);
-      const toRet = await oldValue.apply(this, args);
-      await hookSystem().do_action(postName, args);
-      return toRet;
-    };
-    return descriptor;
-  };
-}
-
-/**
- * Method decorator for filters.
- */
-export function WPFilter<T>(hookSystem: () => WordPressHookSystem, action?: string) {
-  return (target: T,
-          method: string,
-          descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>) => {
-    const oldValue = descriptor.value;
-
-    const postName = `${target.constructor.name}.post.${action || method}`;
-    descriptor.value = async function decorateFilter(...args: any[]) {
-      const toRet = await oldValue.apply(this, args);
-      return await hookSystem().apply_filters(postName, toRet);
-    };
-    return descriptor;
-  };
 }

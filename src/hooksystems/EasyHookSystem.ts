@@ -3,6 +3,9 @@ import { Handler } from '../handler';
 import { BaseHookSystem } from './BaseHookSystem';
 
 export class EasyHookSystem {
+
+  private hooksRegistry: {[k: string]: BaseHookSystem<any>} = {};
+
   public constructor(private model: IFilterModel) {
   }
 
@@ -19,9 +22,9 @@ export class EasyHookSystem {
    * @param [payload=null] the payload that might be used by handlers. Ex: { amount: 100 }
    * @returns {Promise<T[]>}
    */
-  public async do<T>(eventName: string, payload: T = null) {
+  public async do<T>(eventName: string, payload?: T, ...rest: any[]) {
     return this.getFilter(eventName)
-      .parallel(payload);
+      .parallel(payload, ...rest);
   }
 
   /**
@@ -30,11 +33,11 @@ export class EasyHookSystem {
    * @param [payload=null] the payload sent to first handler: Ex: 'me@andreabaccega.com'
    * @returns {Promise<T>|Promise<R>}
    */
-  public async map<T>(eventName: string, payload?: T): Promise<T>;
-  public async map<T, R extends T>(eventName: string, payload?: T): Promise<R>;
-  public async map<T>(eventName: string, payload: T = null) {
+  public async map<T>(eventName: string, payload?: T, ...rest: any[]): Promise<T>;
+  public async map<T, R extends T>(eventName: string, payload?: T, ...rest: any[]): Promise<R>;
+  public async map<T>(eventName: string, payload?: T, ...rest: any[]) {
     return this.getFilter(eventName)
-      .series(payload);
+      .series(payload, ...rest);
   }
   /**
    * emits the event to all handlers parallelly but does not wait for the handlers
@@ -43,15 +46,18 @@ export class EasyHookSystem {
    * @param payload
    * @returns {boolean}
    */
-  public enqueueDo<T>(eventName: string, payload: T = null): true {
+  public enqueueDo<T>(eventName: string, payload?: T): true {
     setImmediate(async () => {
       await this.do(eventName, payload);
     });
     return true;
   }
 
-  private getFilter<T>(eventName: string) {
-    return new BaseHookSystem<T>(eventName, this.model);
+  private getFilter<T>(eventName: string): BaseHookSystem<T> {
+    if (typeof(this.hooksRegistry[eventName]) === 'undefined') {
+      this.hooksRegistry[eventName] = new BaseHookSystem<T>(eventName, this.model);
+    }
+    return this.hooksRegistry[eventName];
   }
 
 }

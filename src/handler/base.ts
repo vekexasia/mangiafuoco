@@ -18,7 +18,7 @@ export class Handler<T, R extends T> {
     });
   }
 
-  constructor(public key: string, public handle: (obj: T) => Promise<R>) {
+  constructor(public key: string, public handle: (obj: T, ...rest: any[]) => Promise<R>) {
   }
 
 }

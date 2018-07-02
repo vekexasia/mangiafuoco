@@ -4,8 +4,9 @@ import { SinonSpy, SinonStub } from 'sinon';
 import * as sinon from 'sinon';
 import { InMemoryFilterModel } from '../../src/filtermodel';
 import { Handler } from '../../src/handler';
-import { EasyHookSystem, WPAction, WPFilter } from '../../src/hooksystems';
+import { EasyHookSystem } from '../../src/hooksystems';
 import { WordPressHookSystem } from '../../src/hooksystems';
+import { OnWPAction, OnWPFilter, WPHooksSubscriber } from '../../src/hooksystems/decorators/';
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
@@ -125,100 +126,131 @@ describe('HookSystems', () => {
     });
 
     describe('decorators', () => {
-      class Test {
-        @WPAction(() => wpHookSystem)
-        public async action(a: number, b: string) {
-          return `action ${a}-${b}`;
-        }
 
-        @WPFilter(() => wpHookSystem)
-        public async filter(a: number, b: string) {
-          return `filter ${a}-${b}`;
-        }
+      class Test extends WPHooksSubscriber(Object) {
 
-        @WPFilter(() => wpHookSystem)
-        @WPAction(() => wpHookSystem)
-        public async both(a: number, b: string) {
-          return `filter ${a}-${b}`;
-        }
+        public stub: SinonStub = sinon.stub().throws('stub');
 
-        @WPFilter(() => wpHookSystem, 'meowFilter')
-        @WPAction(() => wpHookSystem, 'meowAction')
-        @WPAction(() => wpHookSystem, 'meowAction2')
-        public async bothCustom(a: number, b: string) {
-          return `meowCustom ${a}-${b}`;
+        @OnWPAction(() => wpHookSystem, 'thaAction')
+        public async onAction(...args) {
+          this.stub(...args);
         }
       }
+      class Test2 extends WPHooksSubscriber(Object) {
+        public stub: SinonStub = sinon.stub().throws('stub');
+        public stub2: SinonStub = sinon.stub().throws('stub2');
+        public stub3: SinonStub = sinon.stub().throws('stub3');
+        public stub4: SinonStub = sinon.stub().throws('stub4');
+        public stub5: SinonStub = sinon.stub().throws('stub5');
+        public stub6: SinonStub = sinon.stub().throws('stub6');
+        @OnWPAction(() => wpHookSystem, 'thaAction')
+        public async onActionDiffName(...args) {
+          this.stub(...args);
+        }
 
-      describe('WPAction decorator', () => {
-        let preSpy: SinonStub;
-        let postSpy: SinonStub;
-        beforeEach(async () => {
-          preSpy = sinon.stub().resolves();
-          postSpy = sinon.stub().resolves();
-          await wpHookSystem.add_action('Test.pre.action', new Handler('pre', preSpy));
-          await wpHookSystem.add_action('Test.post.action', new Handler('post', postSpy));
+        @OnWPAction(() => wpHookSystem, 'thaAction2')
+        public async onAction2(...args) {
+          this.stub2(...args);
+        }
+        @OnWPAction(() => wpHookSystem, 'thaAction2', 1)
+        @OnWPAction(() => wpHookSystem, 'thaAction2', 11)
+        public async onAction2PrePost(...args) {
+          this.stub3(...args);
+        }
+
+        @OnWPFilter(() => wpHookSystem, 'hook', 1)
+        public async filterOnly(...args) {
+          return this.stub4(...args);
+        }
+
+        @OnWPFilter(() => wpHookSystem, 'hook', 2)
+        public async filterOnly2(...args) {
+          return this.stub6(...args);
+        }
+        @OnWPAction(() => wpHookSystem, 'hook', 1)
+        public async actionHook() {
+          return this.stub5();
+        }
+      }
+      describe('WPHooksSubscriber', () => {
+        describe('OnWpAction', () => {
+          it('should call Test.thaAction', async () => {
+            const t = new Test();
+            await t.hookMethods();
+            t.stub.returns(null);
+            await wpHookSystem.do_action('thaAction');
+            expect(t.stub.calledOnce).is.true;
+            expect(t.stub.firstCall.args).deep.eq([undefined]);
+          });
+          it('should propagate params', async () => {
+            const t = new Test();
+            await t.hookMethods();
+            t.stub.returns(null);
+            await wpHookSystem.do_action('thaAction', 'one', 'two', 'three');
+            expect(t.stub.calledOnce).is.true;
+            expect(t.stub.firstCall.args).deep.eq(['one', 'two', 'three']);
+          });
+          it('should allow multiple registration and honor priorities', async () => {
+            const t2 = new Test2();
+            await t2.hookMethods();
+            t2.stub2.returns(null);
+            t2.stub3.returns(null);
+            await wpHookSystem.do_action('thaAction2', 'one', 'two', 'three');
+            expect(t2.stub2.calledOnce).is.true;
+            expect(t2.stub3.calledTwice).is.true;
+            expect(t2.stub3.firstCall.calledBefore(t2.stub2.firstCall)).is.true;
+            expect(t2.stub3.secondCall.calledAfter(t2.stub2.firstCall)).is.true;
+          });
+          it('multiple instances', async () => {
+            const t2 = new Test2();
+            const t2_1 = new Test2();
+            await t2.hookMethods();
+            await t2_1.hookMethods();
+            t2.stub.returns(null);
+            t2_1.stub.returns(null);
+            await wpHookSystem.do_action('thaAction', 'one', 'two', 'three');
+            expect(t2_1.stub.calledOnce).is.true;
+            expect(t2.stub.calledOnce).is.true;
+          });
+
+          it('unHook() should unregister all hooks', async () => {
+            const t2 = new Test2();
+            await t2.hookMethods();
+            await t2.unHook();
+            await wpHookSystem.do_action('thaAction', 'one', 'two', 'three');
+          });
+          it('shouldnt do nothing if hookMethods was not called', async () => {
+            // all stubs throws so the fact that this does not throws means that there was no registered hooks
+            await wpHookSystem.do_action('thaAction', 'one', 'two', 'three');
+          });
+          it('shouldnt allow 2 hookMethods', async () => {
+            const t2 = new Test2();
+            await t2.hookMethods();
+            await expect(t2.hookMethods()).rejectedWith('Hooks already bound');
+          });
+          it('should call hook', async () => {
+            const t2 = new Test2();
+            await t2.hookMethods();
+            t2.stub5.returns(null);
+            await wpHookSystem.do_action('hook');
+            expect(t2.stub5.calledOnce).true;
+          });
         });
-        it('should run actions before and after', async () => {
-          const t = new Test();
-          await t.action(10, 'b');
-          expect(preSpy.calledOnce).true;
-          expect(postSpy.calledOnce).true;
-          expect(preSpy.firstCall.args[0]).deep.eq([10, 'b']);
-          expect(postSpy.firstCall.args[0]).deep.eq([10, 'b']);
-          expect(preSpy.calledBefore(postSpy)).true;
+        describe('OnWpFilter', () => {
+          it ('should call hook and remap result properly by preserving priority', async () => {
+            const t2 = new Test2();
+            await t2.hookMethods();
+            t2.stub4.returns('meow');
+            t2.stub6.returns('gluglu');
+            const res = await wpHookSystem.apply_filters('hook', 'woof');
+            expect(res).eq('gluglu');
+            expect(t2.stub6.calledAfter(t2.stub4)).true;
+            expect(t2.stub4.firstCall.args[0]).eq('woof');
+            expect(t2.stub6.firstCall.args[0]).eq('meow');
+          });
         });
       });
-      describe('WPFilter decorator', () => {
-        let postStub: SinonStub;
-        let postStub2: SinonStub;
-        beforeEach(async () => {
-          postStub = sinon.stub().resolves('meow');
-          postStub2 = sinon.stub().resolves('woof');
-          await wpHookSystem.add_filter('Test.post.filter', new Handler('post', postStub));
-          await wpHookSystem.add_filter('Test.post.filter', new Handler('post2', postStub2), 11);
-        });
-        it('should run filter and return filtered result', async () => {
-          const t = new Test();
-          const res = await t.filter(10, 'b');
-          expect(postStub.calledOnce).true;
-          expect(postStub2.calledOnce).true;
 
-          expect(postStub.firstCall.args[0]).eq(`filter ${10}-${'b'}`);
-          expect(postStub2.firstCall.args[0]).eq('meow');
-          expect(res).eq('woof');
-        });
-      });
-
-      it('both action and filter', async () => {
-        const t = new Test();
-        const actionStub = sinon.stub().resolves();
-        const filterStub = sinon.stub().resolves('hey');
-        await wpHookSystem.add_action('Test.pre.both', new Handler('postActin', actionStub));
-        await wpHookSystem.add_filter('Test.post.both', new Handler('filter', filterStub));
-
-        const res = await t.both(10, 'b');
-        expect(actionStub.calledOnce).is.true;
-        expect(filterStub.calledOnce).is.true;
-
-        expect(res).eq('hey');
-      });
-      it('multiple and renamed', async () => {
-        const t = new Test();
-        const actionStub = sinon.stub().resolves();
-        const actionStub2 = sinon.stub().resolves();
-        const filterStub = sinon.stub().resolves('hey');
-        await wpHookSystem.add_action('Test.pre.meowAction', new Handler('postActin', actionStub));
-        await wpHookSystem.add_action('Test.pre.meowAction2', new Handler('postActin2', actionStub2));
-        await wpHookSystem.add_filter('Test.post.meowFilter', new Handler('filter', filterStub));
-
-        const res = await t.bothCustom(10, 'b');
-        expect(actionStub.calledOnce).is.true;
-        expect(actionStub2.calledOnce).is.true;
-        expect(filterStub.calledOnce).is.true;
-
-        expect(res).eq('hey');
-      });
     });
   });
 
