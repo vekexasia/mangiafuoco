@@ -44,39 +44,62 @@ describe('HookSystems', () => {
       });
     });
 
-    describe('process', () => {
+    describe('seriesMap', () => {
       it('should call queryHandlers passing itself as only arg', async () => {
-        await hookSystem.series(1);
+        await hookSystem.seriesMap(1);
         expect(mockModel.queryStub.called).is.true;
         expect(mockModel.queryStub.calledOnce).is.true;
         expect(mockModel.queryStub.firstCall.args[0]).is.deep.eq(hookSystem);
       });
       it('should return original object if no query handlers', async () => {
-        expect(await hookSystem.series(1)).is.eq(1);
-        expect(await hookSystem.series(2)).is.eq(2);
-        expect(await hookSystem.series({a: 'b'} as any)).is.deep.eq({a: 'b'});
+        expect(await hookSystem.seriesMap(1)).is.eq(1);
+        expect(await hookSystem.seriesMap(2)).is.eq(2);
+        expect(await hookSystem.seriesMap({a: 'b'} as any)).is.deep.eq({a: 'b'});
       });
       it('should resolve all query sequentially passing value to next handler', async () => {
         const theSpyFirst = spy((n: number, cback) => cback(null, n + 1));
         const theSpyLast  = spy((n: number, cback) => cback(null, n / 2));
         mockModel.handlers.push(Handler.fromCback('addOne', theSpyFirst));
         mockModel.handlers.push(Handler.fromCback('divideByTwo', theSpyLast));
-        expect(await hookSystem.series(1)).is.eq(1);
-        expect(await hookSystem.series(2)).is.eq(1.5);
-        expect(await hookSystem.series(3)).is.eq(2);
+        expect(await hookSystem.seriesMap(1)).is.eq(1);
+        expect(await hookSystem.seriesMap(2)).is.eq(1.5);
+        expect(await hookSystem.seriesMap(3)).is.eq(2);
 
         // ordering test
         expect(theSpyFirst.calledBefore(theSpyLast)).is.true;
       });
       it('should throw error if one handler is throwing error and avoid calling subsequent handlers', async () => {
+        const theSpyLast = spy((n: number, cback) => cback(null, n / 2));
+        mockModel.handlers.push(Handler.fromCback('addOne', (n: number, cback) => cback(null, n + 1)));
+        mockModel.handlers.push(Handler.fromCback('throwError', (n: number, cback) => cback(new Error('shit'), null)));
+        mockModel.handlers.push(Handler.fromCback('divideByTwo', theSpyLast));
+        await expect(hookSystem.seriesMap(1)).to.eventually.not.be.rejectedWith('shit');
+        expect(theSpyLast.called).is.false;
+      });
+    });
 
+    describe('series', () => {
+      it('should call all handlers with original args', async () => {
+        const theSpyFirst = spy((n: number, cback) => cback(null, n + 2));
+        const theSpyLast  = spy((n: number, cback) => cback(null, n / 2));
+        mockModel.handlers.push(Handler.fromCback('addOne', theSpyFirst));
+        mockModel.handlers.push(Handler.fromCback('divideByTwo', theSpyLast));
+
+        await expect(hookSystem.series(1, 'a', 'b', 'c')).to.fulfilled;
+        expect(theSpyLast.firstCall.args.slice(2)).deep.eq(['a', 'b', 'c']);
+        expect(theSpyFirst.firstCall.args.slice(2)).deep.eq(['a', 'b', 'c']);
+        expect(theSpyLast.firstCall.args[0]).deep.eq(1);
+        expect(theSpyFirst.firstCall.args[0]).deep.eq(1);
+
+      });
+      it('should throw error if one handler is throwing and stop execution', async () => {
         const theSpyLast = spy((n: number, cback) => cback(null, n / 2));
         mockModel.handlers.push(Handler.fromCback('addOne', (n: number, cback) => cback(null, n + 1)));
         mockModel.handlers.push(Handler.fromCback('throwError', (n: number, cback) => cback(new Error('shit'), null)));
         mockModel.handlers.push(Handler.fromCback('divideByTwo', theSpyLast));
         await expect(hookSystem.series(1)).to.eventually.not.be.rejectedWith('shit');
         expect(theSpyLast.called).is.false;
-      });
+      })
     });
 
     describe('parallel', () => {

@@ -15,7 +15,7 @@ describe('HookSystems', () => {
   describe('WordpressHookSystem', () => {
     let wpHookSystem: WordPressHookSystem;
     let easyHookSystem: EasyHookSystem;
-    let easyHookSpies: { do: SinonSpy, register: SinonSpy, map: SinonSpy };
+    let easyHookSpies: { do: SinonSpy, register: SinonSpy, map: SinonSpy, series: SinonSpy };
     const uselessHandler = Handler.fromCback('h', (a, b) => b(null, 1));
     let wpSpies: {
       add: SinonSpy,
@@ -26,6 +26,7 @@ describe('HookSystems', () => {
       easyHookSystem  = new EasyHookSystem(mockModel);
       easyHookSpies   = {
         do      : sinon.spy(easyHookSystem, 'do'),
+        series  : sinon.spy(easyHookSystem, 'series'),
         map     : sinon.spy(easyHookSystem, 'map'),
         register: sinon.spy(easyHookSystem, 'register'),
       };
@@ -52,16 +53,29 @@ describe('HookSystems', () => {
     });
 
     describe('do_action', () => {
-      it('should call easyHookSystem .do with args provided', async () => {
+      it('should call easyHookSystem .series with args provided', async () => {
         await wpHookSystem.do_action('theAction', 'thePayload');
+        expect(easyHookSpies.series.called).is.true;
+        expect(easyHookSpies.series.calledWith('action_theAction', 'thePayload')).is.true;
+      });
+      it('should return undefined resolved promise', async () => {
+        const ret = await wpHookSystem.do_action('theAction', 'thePayload');
+        expect(ret).is.undefined;
+      });
+    });
+
+    describe('do_action_parallel', () => {
+      it('should call easyHookSystem.do', async () => {
+        await wpHookSystem.do_action_parallel('theAction', 'thePayload');
         expect(easyHookSpies.do.called).is.true;
         expect(easyHookSpies.do.calledWith('action_theAction', 'thePayload')).is.true;
       });
-      it('should return the same promise returned by easyHookSystem.do (empty array)', async () => {
-        const ret = await wpHookSystem.do_action('theAction', 'thePayload');
+      it('should return array resolved promise', async () => {
+        const ret = await wpHookSystem.do_action_parallel('theAction', 'thePayload');
         expect(ret).is.deep.eq([]);
       });
     });
+
     describe('apply_filters', () => {
       it('should call easyHookSystem .map with args provided', async () => {
         await wpHookSystem.apply_filters('theFilter', 'thePayload');
@@ -136,13 +150,15 @@ describe('HookSystems', () => {
           this.stub(...args);
         }
       }
+
       class Test2 extends WPHooksSubscriber(Object) {
-        public stub: SinonStub = sinon.stub().throws('stub');
+        public stub: SinonStub  = sinon.stub().throws('stub');
         public stub2: SinonStub = sinon.stub().throws('stub2');
         public stub3: SinonStub = sinon.stub().throws('stub3');
         public stub4: SinonStub = sinon.stub().throws('stub4');
         public stub5: SinonStub = sinon.stub().throws('stub5');
         public stub6: SinonStub = sinon.stub().throws('stub6');
+
         @OnWPAction(() => wpHookSystem, 'thaAction')
         public async onActionDiffName(...args) {
           this.stub(...args);
@@ -152,6 +168,7 @@ describe('HookSystems', () => {
         public async onAction2(...args) {
           this.stub2(...args);
         }
+
         @OnWPAction(() => wpHookSystem, 'thaAction2', 1)
         @OnWPAction(() => wpHookSystem, 'thaAction2', 11)
         public async onAction2PrePost(...args) {
@@ -167,11 +184,13 @@ describe('HookSystems', () => {
         public async filterOnly2(...args) {
           return this.stub6(...args);
         }
+
         @OnWPAction(() => wpHookSystem, 'hook', 1)
         public async actionHook() {
           return this.stub5();
         }
       }
+
       describe('WPHooksSubscriber', () => {
         describe('OnWpAction', () => {
           it('should call Test.thaAction', async () => {
@@ -200,9 +219,23 @@ describe('HookSystems', () => {
             expect(t2.stub3.calledTwice).is.true;
             expect(t2.stub3.firstCall.calledBefore(t2.stub2.firstCall)).is.true;
             expect(t2.stub3.secondCall.calledAfter(t2.stub2.firstCall)).is.true;
+
+          });
+          it('should always pass same arguments to all registered actions', async () => {
+            const t2 = new Test2();
+            await t2.hookMethods();
+            t2.stub3.returns('a');
+            t2.stub2.returns('b');
+
+            await wpHookSystem.do_action('thaAction2', 'one', 'two', 'three');
+
+            expect(t2.stub2.firstCall.args).deep.eq(['one', 'two', 'three']);
+            expect(t2.stub3.firstCall.args).deep.eq(['one', 'two', 'three']);
+            expect(t2.stub3.secondCall.args).deep.eq(['one', 'two', 'three']);
+
           });
           it('multiple instances', async () => {
-            const t2 = new Test2();
+            const t2   = new Test2();
             const t2_1 = new Test2();
             await t2.hookMethods();
             await t2_1.hookMethods();
@@ -237,7 +270,7 @@ describe('HookSystems', () => {
           });
         });
         describe('OnWpFilter', () => {
-          it ('should call hook and remap result properly by preserving priority', async () => {
+          it('should call hook and remap result properly by preserving priority', async () => {
             const t2 = new Test2();
             await t2.hookMethods();
             t2.stub4.returns('meow');

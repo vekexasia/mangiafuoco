@@ -12,7 +12,7 @@ describe('HookSystems', () => {
   describe('EasyHookSystem', () => {
     let hookSystem: EasyHookSystem;
     let mockModel: MockModel;
-    let lastHookSystem: { addHandler: SinonSpy, series: SinonSpy, processParallel: SinonSpy };
+    let lastHookSystem: { addHandler: SinonSpy, series: SinonSpy, seriesMap: SinonSpy, processParallel: SinonSpy };
     let getFilterSpy: SinonSpy;
     beforeEach(() => {
       mockModel               = new MockModel();
@@ -22,7 +22,8 @@ describe('HookSystems', () => {
         const toREet                   = oldGetFilter.call(hookSystem, eventName) as BaseHookSystem<any>;
         lastHookSystem                 = {} as any;
         lastHookSystem.addHandler      = sinon.spy(toREet, 'addHandler');
-        lastHookSystem.series         = sinon.spy(toREet, 'series');
+        lastHookSystem.series          = sinon.spy(toREet, 'series');
+        lastHookSystem.seriesMap       = sinon.spy(toREet, 'seriesMap');
         lastHookSystem.processParallel = sinon.spy(toREet, 'parallel');
         return toREet;
       };
@@ -55,7 +56,7 @@ describe('HookSystems', () => {
       });
       it('should call series on the HookSystem', async () => {
         await hookSystem.map('event', 'payload');
-        expect(lastHookSystem.series.calledWith('payload')).is.true;
+        expect(lastHookSystem.seriesMap.calledWith('payload')).is.true;
       });
     });
 

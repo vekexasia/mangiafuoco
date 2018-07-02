@@ -1,8 +1,8 @@
 export class Handler<T, R extends T> {
 
   // tslint:disable-next-line max-line-length
-  public static fromCback<T, R extends T>(key: string, cback: (obj: T, c: (err: Error, res: R) => void) => void): Handler<T, R> {
-    return new Handler<T, R>(key, (obj: T) => {
+  public static fromCback<T, R extends T>(key: string, cback: (obj: T, c: (err: Error, res: R) => void, ...otherParams: any[]) => void): Handler<T, R> {
+    return new Handler<T, R>(key, (obj: T, ...rest: any[]) => {
       return new Promise<R>((resolve, reject) => {
         try {
           cback(obj, (err: Error, res: R) => {
@@ -10,7 +10,7 @@ export class Handler<T, R extends T> {
               return reject(err);
             }
             return resolve(res);
-          });
+          }, ...rest);
         } catch (e) {
           reject(e);
         }

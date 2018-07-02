@@ -13,11 +13,11 @@ export class WordPressHookSystem {
   }
 
   public do_action(action: string, payload?: any, ...args: any[]): Promise<any> {
-    return this.easyFilter.do(`action_${action}`, payload, ...args);
+    return this.easyFilter.series(`action_${action}`, payload, ...args);
   }
 
   public do_action_parallel(action: string, payload?: any, ...args: any[]): Promise<any> {
-    return this.easyFilter.map(`action_${action}`, payload, ...args);
+    return this.easyFilter.do(`action_${action}`, payload, ...args);
   }
 
   public add_filter(filter: string, handler: Handler<any, any>, priority: number = 10): Promise<true> {
