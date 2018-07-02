@@ -46,9 +46,9 @@ export function WPHooksSubscriber<T extends { new(...args: any[]): {} }>(constru
     // tslint:disable variable-name
     public __wpActionListeners: BaseActionRepoInfo[];
     public __wpFilterListeners: BaseFilterRepoInfo[];
-    private __wpuid: string;
-    private _registered_actions: Array<RegisteredInfo<BaseActionRepoInfo>> = [];
-    private _registered_filters: Array<RegisteredInfo<BaseFilterRepoInfo>> = [];
+    public __wpuid: string;
+    public _registered_actions: Array<RegisteredInfo<BaseActionRepoInfo>> = [];
+    public _registered_filters: Array<RegisteredInfo<BaseFilterRepoInfo>> = [];
     // tslint:enable variable-name
 
     public async hookMethods() {
