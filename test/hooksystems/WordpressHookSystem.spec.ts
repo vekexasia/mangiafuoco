@@ -158,6 +158,8 @@ describe('HookSystems', () => {
         public stub4: SinonStub = sinon.stub().throws('stub4');
         public stub5: SinonStub = sinon.stub().throws('stub5');
         public stub6: SinonStub = sinon.stub().throws('stub6');
+        public stub7: SinonStub = sinon.stub().throws('stub7');
+        public hookSystem: WordPressHookSystem = wpHookSystem;
 
         @OnWPAction(() => wpHookSystem, 'thaAction')
         public async onActionDiffName(...args) {
@@ -180,14 +182,20 @@ describe('HookSystems', () => {
           return this.stub4(...args);
         }
 
+        @OnWPAction(() => wpHookSystem, 'hook', 1)
+        public async actionHook() {
+          return this.stub5();
+        }
+
         @OnWPFilter(() => wpHookSystem, 'hook', 2)
         public async filterOnly2(...args) {
           return this.stub6(...args);
         }
 
-        @OnWPAction(() => wpHookSystem, 'hook', 1)
-        public async actionHook() {
-          return this.stub5();
+        @OnWPAction('hook', -1)
+        @OnWPAction('hook', 2)
+        public withDefault(): Promise<void> {
+          return this.stub7();
         }
       }
 
@@ -261,12 +269,16 @@ describe('HookSystems', () => {
             await t2.hookMethods();
             await expect(t2.hookMethods()).rejectedWith('Hooks already bound');
           });
-          it('should call hook', async () => {
+          it('should call hook on both methods', async () => {
             const t2 = new Test2();
             await t2.hookMethods();
             t2.stub5.returns(null);
+            t2.stub7.returns(null);
             await wpHookSystem.do_action('hook');
             expect(t2.stub5.calledOnce).true;
+            expect(t2.stub7.calledTwice).true;
+            expect(t2.stub7.firstCall.calledBefore(t2.stub5.firstCall)).true;
+            expect(t2.stub7.secondCall.calledAfter(t2.stub5.firstCall)).true;
           });
         });
         describe('OnWpFilter', () => {

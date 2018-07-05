@@ -25,6 +25,11 @@ export interface IWPHookSubscriber {
   __wpFilterListeners: BaseFilterRepoInfo[];
 
   /**
+   * Class specific hook system to be used with all the decorators.
+   */
+  hookSystem?: WordPressHookSystem;
+
+  /**
    * Initialize class with decorated methods.
    * @return {Promise<void>}
    */
@@ -50,6 +55,7 @@ export function WPHooksSubscriber<T extends { new(...args: any[]): {} }>(constru
     public _registered_actions: Array<RegisteredInfo<BaseActionRepoInfo>> = [];
     public _registered_filters: Array<RegisteredInfo<BaseFilterRepoInfo>> = [];
     // tslint:enable variable-name
+    public hookSystem?: WordPressHookSystem;
 
     public async hookMethods() {
       if (this.__wpuid) {
@@ -63,8 +69,12 @@ export function WPHooksSubscriber<T extends { new(...args: any[]): {} }>(constru
             `${this.constructor.name}[${this.__wpuid}].action.${a.action}`,
             (...handlerArgs) => this[a.method](...handlerArgs)
           );
-          await a.hookGetter().add_action(a.action, handler, a.priority);
-          this._registered_actions.push({... a, handler});
+          let hookGetter = a.hookGetter;
+          if (typeof(hookGetter) !== 'function') {
+            hookGetter = () => this.hookSystem;
+          }
+          await hookGetter().add_action(a.action, handler, a.priority);
+          this._registered_actions.push({... a, handler, hookGetter});
         }
       }
       if (Array.isArray(this.__wpFilterListeners)) {
@@ -73,8 +83,12 @@ export function WPHooksSubscriber<T extends { new(...args: any[]): {} }>(constru
             `${this.constructor.name}[${this.__wpuid}].filter.${a.filter}`,
             (...handlerArgs) => this[a.method](...handlerArgs)
           );
-          await a.hookGetter().add_filter(a.filter, handler, a.priority);
-          this._registered_filters.push({... a, handler});
+          let hookGetter = a.hookGetter;
+          if (typeof(hookGetter) !== 'function') {
+            hookGetter = () => this.hookSystem;
+          }
+          await hookGetter().add_filter(a.filter, handler, a.priority);
+          this._registered_filters.push({... a, handler, hookGetter});
         }
       }
     }

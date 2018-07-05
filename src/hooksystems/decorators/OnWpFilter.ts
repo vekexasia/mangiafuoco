@@ -1,4 +1,5 @@
 import { WordPressHookSystem } from '../WordpressHookSystem';
+import { MethodDecorator } from './methodDecorator';
 import { IWPHookSubscriber } from './WpHookSubscriber';
 
 /**
@@ -7,13 +8,22 @@ import { IWPHookSubscriber } from './WpHookSubscriber';
  * @param {string} filter filtername
  * @param {number} priority priority for the filter (defaults to 10)
  */
-// tslint:disable-next-line max-line-length
-export function OnWPFilter<T extends IWPHookSubscriber>(hookGetter: () => WordPressHookSystem, filter: string, priority: number = 10) {
+// tslint:disable max-line-length
+export function OnWPFilter<T extends IWPHookSubscriber, K = (...args: any[]) => Promise<any>>(hookGetter: () => WordPressHookSystem, filter: string, priority?: number): MethodDecorator<T, K>;
+export function OnWPFilter<T extends IWPHookSubscriber & { hookSystem: WordPressHookSystem }, K = (...args: any[]) => Promise<any>>(filter: string, priority?: number): MethodDecorator<T, K>;
+export function OnWPFilter<T extends IWPHookSubscriber, K = (...args: any[]) => Promise<any>>(hookGetter: string | (() => WordPressHookSystem), filter: string | number, priority: number = 10): MethodDecorator<T, K> {
+  if (typeof(hookGetter) === 'string') {
+    if (typeof (filter) === 'number') {
+      priority = filter;
+    }
+    filter     = hookGetter;
+    hookGetter = null as () => WordPressHookSystem;
+  }
   return (target: T,
           method: string,
-          descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>) => {
+          descriptor: TypedPropertyDescriptor<K>) => {
     target.__wpFilterListeners = target.__wpFilterListeners || [];
-    target.__wpFilterListeners.push({method, filter, hookGetter, priority});
+    target.__wpFilterListeners.push({ method, filter: filter as string, hookGetter: hookGetter as any, priority });
     return descriptor;
   };
 }
